@@ -47,3 +47,6 @@ export const deletePhotoApi = (data) => service.post('/deletePhoto', data);
 
 // 删除帖子 deleteWall
 export const deleteWallApi = (data) => service.post('/deleteWall', data);
+
+// 分页查询用户列表
+export const findUserPageApi = (data) => service.post('/findUserPage', data);

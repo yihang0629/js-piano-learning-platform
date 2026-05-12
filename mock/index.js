@@ -114,3 +114,16 @@ export const user = Mock.mock({
         "tx|0-10":0,
     }]
 })
+
+export const users = Mock.mock({
+    "data|50":[{
+        "id|+1":1,
+        "username":"@cname",
+        "email":"@email",
+        "phone":"@phone",
+        "createTime":"@datetime",
+        "status|0-1":0,
+        "role|0-1":0,
+        "avatar|0-10":0,
+    }]
+})

@@ -6,6 +6,7 @@ import CardPage from '@/views/CardPage.vue';
 import PhotoPage from '@/views/PhotoPage.vue';
 import PersonCenter from '@/views/PersonCenter.vue';
 import RegisterPage from '@/views/RegisterPage.vue';
+import UserCenter from '@/views/UserCenter.vue';
 
 const routes = [
   {
@@ -34,6 +35,10 @@ const routes = [
   {
     path: '/person',
     component: PersonCenter,
+  },
+  {
+    path: '/user-center',
+    component: UserCenter,
   },
   {
     path: '/register',

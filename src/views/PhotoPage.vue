@@ -27,6 +27,13 @@
         class="menu-Music"
         >曲谱中心</DemoButton
       >
+      <DemoButton
+        @click="goUserCenter"
+        button_size="max"
+        :button_status="state.id == 2 ? 'cprimary' : 'csecondary'"
+        class="menu-UserCenter"
+        >用户中心</DemoButton
+      >
       <!-- <DemoButton @click="changePage(2)" button_size="max" :button_status="(id == 2 ? 'cprimary' : 'csecondary')" class="menu-Video">琴音分享</DemoButton> -->
     </div>
     <div class="user">
@@ -271,6 +278,11 @@ export default {
     goPhoto() {
       this.state.id = 1;
       this.$router.push('/PhotoPage');
+    },
+    // 点击去往用户中心
+    goUserCenter() {
+      this.state.id = 2;
+      this.$router.push('/user-center');
     },
     // 去往个人中心
     goPerson() {
