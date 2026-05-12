@@ -1,23 +1,20 @@
 <template>
-  <div class="container" @click="close_bq">
-    <router-view />
-    <!-- <PersonCenter></PersonCenter> -->
-  </div>
+  <router-view />
 </template>
 
-<script>
-// import { PersonCenter } from "./views/PersonCenter.vue";
-export default {
-  name: 'App',
-  components: {
-    // PersonCenter
-  },
-  methods: {},
-};
-</script>
+<script setup></script>
 
 <style lang="less">
-.container {
-  background-color: #f8f8f8;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
 }
 </style>

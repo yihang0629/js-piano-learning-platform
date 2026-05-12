@@ -1,56 +1,10 @@
 <template>
-  <div class="top-bar">
-    <HeaderBar v-if="false" />
-    <div class="logo">
-      <img src="@/assets/images/piano.png" class="logo-img" />
-      <p class="logo-name">钢琴知识学习系统</p>
-    </div>
-    <div class="menu">
-      <DemoButton
-        @click="goAutoPlay"
-        button_size="max"
-        :button_status="state.id == -1 ? 'cprimary' : 'csecondary'"
-        class="menu-AutoPlay"
-        >自由弹奏</DemoButton
-      >
-      <DemoButton
-        @click="goForum"
-        button_size="max"
-        :button_status="state.id == 0 ? 'cprimary' : 'csecondary'"
-        class="menu-Forum"
-        >学习论坛</DemoButton
-      >
-      <DemoButton
-        @click="goPhoto"
-        button_size="max"
-        :button_status="state.id == 1 ? 'cprimary' : 'csecondary'"
-        class="menu-Music"
-        >曲谱中心</DemoButton
-      >
-      <DemoButton
-        @click="goUserCenter"
-        button_size="max"
-        :button_status="state.id == 2 ? 'cprimary' : 'csecondary'"
-        class="menu-UserCenter"
-        >用户中心</DemoButton
-      >
-      <!-- <DemoButton @click="changePage(2)" button_size="max" :button_status="(id == 2 ? 'cprimary' : 'csecondary')" class="menu-Video">琴音分享</DemoButton> -->
-    </div>
-    <div class="user">
-      <span>{{ this.hello.string }}，欢迎您</span>
-      <!--游客状态==> 去登录 -->
-      <div class="user-head" v-if="this.user.id == '::1'" @click="goPerson" />
-      <!--登录状态 ==> 退出登录 变游客  -->
-      <div class="user-head" v-if="this.user.id != '::1'" @click="exit" />
-    </div>
-  </div>
   <div class="wall-message">
     <p class="title">{{ menu_item[1].name }}</p>
-    <p calss="slogan" style="text-align: center">{{ menu_item[1].slogan }}</p>
+    <p class="slogan" style="text-align: center">{{ menu_item[1].slogan }}</p>
     <br />
 
     <div class="label" :class="{ fixed: isNavbarFixed || wFlag || PFlag }">
-      <!-- 动态类绑定时，属性名中不允许使用连字符 -。因此，在你的代码中，label-selected 应该改为 labelSelected 或者使用字符串形式的类名。 -->
       <p class="label-list" :class="{ labelSelected: label_num == -1 }" @click="SwitchListNode(-1)">
         全部
       </p>
@@ -66,7 +20,6 @@
     </div>
 
     <div class="photo">
-      <!-- :photo="item" class="music-photo " @click="selectPhoto(index)" :class="{photoSelected:index==cardSelected}" v-for="(item,index) in cardData" :key="index"   -->
       <MusicPhoto
         :photo="item"
         class="music-photo"
@@ -77,31 +30,25 @@
       />
     </div>
 
-    <!-- <FooterBar></FooterBar> -->
-
     <div class="DayToNightToDay" v-show="!PFlag">
       <div class="DayorNight">
-        <!-- <span class="iconfont icon-yejianmoshi" ></span>  -->
         <div class="icon-box" @click="changeModel">
           <span class="iconfont icon-baitianmoshi" v-show="modelFlag" />
           <span class="iconfont icon-yejianmoshi" v-show="!modelFlag" />
         </div>
-
         <p class="CN-model">{{ model }}</p>
       </div>
     </div>
 
-    <!-- 新建图片按键 -->
     <div
       class="add"
-      v-if="this.user.id != '::1'"
+      v-if="user.id != '::1'"
       @click="newPhoto"
       v-show="cardSelected == -1 && addFlag"
     >
       <span class="iconfont icon-jiahao" />
     </div>
 
-    <!-- @changePFlag="changePFlag" -->
     <PhotoView @changePFlag="changePFlag" v-show="PFlag" :id1="id1" :label="label">
       <PhotoDetail :id1="id1" :np="np" v-if="!np" :photo="photos[photoSelected1]" />
       <PhotoDetail2 :id1="id1" :np="np" v-if="np" :photo="photos[photoSelected1]" />
@@ -111,463 +58,191 @@
     </PhotoView>
   </div>
 </template>
-<script>
-import HeaderBar from '@/components/HeaderBar.vue';
-import DemoButton from '@/components/DemoButton.vue';
+
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useStore } from 'vuex';
 import { menu_item, label } from '@/utils/data';
-// import TalkCard from '@/components/TalkCard.vue'
-// import PostCard from '@/components/PostCard.vue'
-// import FooterBar from '@/components/FooterBar.vue'
-// import NewCard from '@/components/NewCard.vue'
-// import CardDetail from '@/components/CardDetail.vue'
+import { findPhotoPageApi } from '@/api/index';
+import { signIpApi } from '@/api/index';
 import MusicPhoto from '@/components/MusicPhoto.vue';
 import PhotoView from '@/components/PhotoView.vue';
 import PhotoDetail from '@/components/PhotoDetail.vue';
 import PhotoDetail2 from '@/components/PhotoDetail2.vue';
 import PostPhoto from '@/components/PostPhoto.vue';
-// import NewPhoto from '@/components/NewPhoto.vue'
-
 import PhotoComment from '@/components/PhotoComment.vue';
 
-import { findPhotoPageApi } from '@/api/index';
-import { signIpApi } from '@/api/index';
+const store = useStore();
 
-import { talk, photo } from '../../mock/index';
+const id1 = ref(1);
+const isNavbarFixed = ref(false);
+const label_num = ref(-1);
+const modelFlag = ref(false);
+const model = ref('夜间');
+const labelFlag = ref(true);
+const np = ref(false);
+const wFlag = ref(false);
+const PFlag = ref(false);
+const addFlag = ref(true);
+const cardSelected = ref(-1);
+const photoSelected = ref(-1);
+const cards = ref([]);
+const photos = ref([]);
+const page = ref(1);
+const pagesize = ref(100);
 
-import { inject } from 'vue';
+const user = computed(() => store.state.user);
 
-export default {
-  components: {
-    // TalkCard,
-    // PostCard,
-    // FooterBar,s
-    // NewCard,
-    // CardDetail,
-    HeaderBar,
-    DemoButton,
-    MusicPhoto,
-    PhotoView,
-    PhotoDetail,
-    PostPhoto,
-    PhotoComment,
-    PhotoDetail2,
-  },
-  data() {
-    return {
-      id1: 1,
-      menu_item,
-      // 论坛下的导航栏
-      label,
-      // 控制导航栏是否固定
-      isNavbarFixed: false,
+const photoSelected1 = computed(() => {
+  return photoSelected.value == -1 ? 0 : photoSelected.value;
+});
 
-      // label_num用于表示不同列表项被选中 -1代表 全部 被选中
-      label_num: -1,
-
-      // 拿到假数据
-      photo: photo.data,
-      talk: talk.data,
-      // photos:photos.data,
-
-      // 控制昼夜
-      modelFlag: false,
-      model: '夜间',
-
-      // 控制label是否固定
-      labelFlag: true,
-
-      // title 新建标题
-      title: '发表新帖',
-
-      // rr
-      rr: false,
-      np: false,
-
-      // wFlag 发帖窗口是否显示在界面
-      wFlag: false,
-
-      // 图片详情
-      PFlag: false,
-
-      // addFlag
-      addFlag: true,
-
-      // 当前点击的卡片的index
-      cardSelected: -1,
-
-      // 当前点击的图片的index
-      photoSelected: -1,
-
-      // 帖子真数据
-      cards: [],
-
-      photos: [],
-
-      //
-      page: 1,
-      pagesize: 100,
-
-      showComponent: false,
-    };
-  },
-  created() {
-    if (!this.user) {
-      this.getUserIp();
+const handleScroll = () => {
+  const labelElement = document.querySelector('.label');
+  if (labelElement) {
+    const navbarOffsetTop = labelElement.offsetTop;
+    const scrollPosition = window.scrollY;
+    if (labelFlag.value && scrollPosition - navbarOffsetTop > -60) {
+      isNavbarFixed.value = true;
+      labelFlag.value = !labelFlag.value;
+    } else if (!labelFlag.value && scrollPosition - navbarOffsetTop < 20) {
+      isNavbarFixed.value = false;
+      labelFlag.value = !labelFlag.value;
     }
-    console.log(this.user);
-  },
-  mounted() {
-    // alert(this.$route.params.param1);
-    console.log(this.user);
-    // 监听滚动事件
-    window.addEventListener('scroll', this.handleScroll);
-
-    // 处理游客的唯一标识userId 即ip地址
-    this.getUser();
-
-    // 处理欢迎语
-
-    if (this.user.id == '1') {
-      let hello = { string: '管理员' };
-      this.$store.commit('getHello', hello);
-    }
-    if (this.user.id == '3') {
-      let hello = { string: '用户名' };
-      this.$store.commit('getHello', hello);
-    }
-  },
-  beforeUnmount() {
-    // 清除监听器
-    // window.removeEventListener('scroll', this.handleScroll);
-  },
-  computed: {
-    state() {
-      const store = inject('store');
-      return store.state;
-    },
-    id() {
-      return this.$store.state.id;
-    },
-    user() {
-      return this.$store.state.user;
-    },
-    hello() {
-      return this.$store.state.hello;
-    },
-
-    photoSelected1() {
-      if (this.photoSelected == -1) {
-        return 0;
-      } else {
-        return this.photoSelected;
-      }
-    },
-  },
-  methods: {
-    // 点击去往自由弹奏
-    goAutoPlay() {
-      this.state.id = -1;
-      this.$router.push('/AutoPlay');
-    },
-    // 点击去往学习论坛
-    goForum() {
-      this.state.id = 0;
-      this.$router.push('/CardPage');
-    },
-    // 点击去往曲谱中心
-    goPhoto() {
-      this.state.id = 1;
-      this.$router.push('/PhotoPage');
-    },
-    // 点击去往用户中心
-    goUserCenter() {
-      this.state.id = 2;
-      this.$router.push('/user-center');
-    },
-    // 去往个人中心
-    goPerson() {
-      this.$router.push('/person');
-    },
-    // 退出登录
-    exit() {
-      alert('是否退出登录？');
-      location.reload();
-    },
-
-    getUserIp() {
-      signIpApi()
-        .then((res) => {
-          //   console.log(res);
-          let user = {
-            id: res.ip,
-          };
-          this.$store.commit('getUser', user);
-        })
-        .catch((error) => {
-          console.error('Error fetching user:', error);
-        });
-    },
-
-    getUser() {
-      let timer = setInterval(() => {
-        if (this.user) {
-          clearInterval(timer);
-          this.getPhoto(this.id);
-        }
-      }, 10);
-    },
-    // 为数据库中的留言帖子表的所有属性赋初值，并经由后端处理，形成新的数据集cards，再由前端渲染到页面
-    getPhoto(id1) {
-      let data;
-      if (this.page > 0) {
-        data = {
-          type: id1,
-          page: this.page,
-          pagesize: this.pagesize,
-          userId: this.user.id,
-          label: this.label_num,
-        };
-        // console.log(data);
-
-        findPhotoPageApi(data).then((res) => {
-          this.photos = this.photos.concat(res.message);
-          // console.log(res.message);
-
-          if (res.message.length) {
-            this.page++;
-          } else {
-            this.page = 0;
-          }
-        });
-      }
-    },
-
-    // 点击论坛下的子导航栏 切换对应列表项 展示相应的内容
-    SwitchListNode(index) {
-      this.label_num = index;
-
-      // 点击切换论坛下子导航 详情页模态框应处于非弹出状态
-      this.wFlag = false;
-      this.PFlag = false;
-      this.cardSelected = -1;
-      this.photoSelected = -1;
-
-      // 清空当前页面渲染的数据
-      this.cards = [];
-      this.photos = [];
-      // page表示无限列表的第几页
-      this.page = 1;
-
-      this.getPhoto(this.id1);
-    },
-
-    // 切换昼夜
-    changeModel() {
-      this.modelFlag = !this.modelFlag;
-      if (this.modelFlag) {
-        this.model = '白天';
-      } else {
-        this.model = '夜间';
-      }
-    },
-
-    // 点击cha 关闭图片详情
-    changePFlag() {
-      this.PFlag = false;
-      this.np = false;
-    },
-
-    // 实现监控导航栏位置
-    handleScroll() {
-      const labelElement = document.querySelector('.label');
-
-      // 检查是否成功找到了元素
-      if (labelElement) {
-        const navbarOffsetTop = labelElement.offsetTop;
-
-        // 获取当前滚动位置
-        const scrollPosition = window.scrollY;
-
-        // 如果滚动位置超过了导航栏初始位置，则固定导航栏
-        console.log(this.labelFlag, scrollPosition - navbarOffsetTop);
-        if (this.labelFlag && scrollPosition - navbarOffsetTop > -60) {
-          this.isNavbarFixed = true;
-          this.labelFlag = !this.labelFlag;
-        } else if (!this.labelFlag && scrollPosition - navbarOffsetTop < 20) {
-          this.isNavbarFixed = false;
-          this.labelFlag = !this.labelFlag;
-        }
-      } else {
-        // 如果未找到元素，进行错误处理
-        console.error('未找到具有 .label 类名的元素');
-      }
-    },
-
-    // // 点击新建空白 详情/发帖 模态框
-    newBlankCard() {
-      this.title = '发表新帖';
-      this.rr = false;
-      // this.changePostW();
-      this.wFlag = !this.wFlag;
-    },
-    newPhoto() {
-      this.np = true;
-      this.PFlag = true;
-      this.addFlag = false;
-      // console.log(this.np);
-    },
-
-    //点击cha 改变发帖窗口的显示状态
-    changePostW(value) {
-      this.wFlag = !this.wFlag;
-      this.cardSelected = value;
-    },
-
-    //点击取消按钮 关闭 模态框
-    closePostW() {
-      this.wFlag = false;
-    },
-
-    // 选择卡片
-    selectCard(e) {
-      this.title = '';
-      this.rr = true;
-      if (this.cardSelected != e) {
-        this.cardSelected = e;
-        this.wFlag = true;
-      } else {
-        this.cardSelected = -1;
-        this.wFlag = false;
-      }
-    },
-    // 选择图片
-    selectPhoto(e) {
-      if (this.photoSelected != e) {
-        this.photoSelected = e;
-        // console.log(this.photoSelected);
-        this.PFlag = true;
-        this.np = false;
-        this.addFlag = false;
-      } else {
-        this.photoSelected = -1;
-        this.PFlag = false;
-        this.addFlag = true;
-      }
-    },
-    // 删除图片
-    deletePhoto(photoId) {
-      this.photos = this.photos.filter((photo) => photo.id !== photoId);
-      // location.reload();
-      setTimeout(() => {
-        alert('删除成功');
-      }, 10);
-    },
-    // 关闭图片详情窗口
-    closePW() {
-      this.PFlag = false;
-      this.addFlag = true;
-      this.photoSelected = -1;
-    },
-
-    // 插入新贴
-    insert(newdata) {
-      this.cards.unshift(newdata);
-      this.changePostW();
-      setTimeout(() => {
-        alert('发布成功');
-      }, 800);
-    },
-
-    // 插入新图片
-    insertPhoto(photoData) {
-      setTimeout(() => {
-        this.photos.unshift(photoData);
-        console.log(photoData);
-        this.PFlag = false;
-        this.addFlag = true;
-      }, 800);
-    },
-  },
+  }
 };
+
+const getUserIp = () => {
+  signIpApi()
+    .then((res) => {
+      const userData = {
+        id: res.ip,
+      };
+      store.commit('getUser', userData);
+    })
+    .catch((error) => {
+      console.error('Error fetching user:', error);
+    });
+};
+
+const getUser = () => {
+  const timer = setInterval(() => {
+    if (user.value) {
+      clearInterval(timer);
+      getPhoto(id1.value);
+    }
+  }, 10);
+};
+
+const getPhoto = (id) => {
+  if (page.value > 0) {
+    const data = {
+      type: id,
+      page: page.value,
+      pagesize: pagesize.value,
+      userId: user.value.id,
+      label: label_num.value,
+    };
+    findPhotoPageApi(data).then((res) => {
+      photos.value = photos.value.concat(res.message);
+      if (res.message.length) {
+        page.value++;
+      } else {
+        page.value = 0;
+      }
+    });
+  }
+};
+
+const SwitchListNode = (index) => {
+  label_num.value = index;
+  wFlag.value = false;
+  PFlag.value = false;
+  cardSelected.value = -1;
+  photoSelected.value = -1;
+  cards.value = [];
+  photos.value = [];
+  page.value = 1;
+  getPhoto(id1.value);
+};
+
+const changeModel = () => {
+  modelFlag.value = !modelFlag.value;
+  model.value = modelFlag.value ? '白天' : '夜间';
+};
+
+const changePFlag = () => {
+  PFlag.value = false;
+  np.value = false;
+};
+
+const newPhoto = () => {
+  np.value = true;
+  PFlag.value = true;
+  addFlag.value = false;
+};
+
+const selectPhoto = (e) => {
+  if (photoSelected.value != e) {
+    photoSelected.value = e;
+    PFlag.value = true;
+    np.value = false;
+    addFlag.value = false;
+  } else {
+    photoSelected.value = -1;
+    PFlag.value = false;
+    addFlag.value = true;
+  }
+};
+
+const deletePhoto = (photoId) => {
+  photos.value = photos.value.filter((photo) => photo.id !== photoId);
+  setTimeout(() => {
+    alert('删除成功');
+  }, 10);
+};
+
+const closePW = () => {
+  PFlag.value = false;
+  addFlag.value = true;
+  photoSelected.value = -1;
+};
+
+const insertPhoto = (photoData) => {
+  setTimeout(() => {
+    photos.value.unshift(photoData);
+    PFlag.value = false;
+    addFlag.value = true;
+  }, 800);
+};
+
+onMounted(() => {
+  if (!user.value) {
+    getUserIp();
+  }
+  window.addEventListener('scroll', handleScroll);
+  getUser();
+
+  if (user.value.id == '1') {
+    store.commit('getHello', { string: '管理员' });
+  }
+  if (user.value.id == '3') {
+    store.commit('getHello', { string: '用户名' });
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
 </script>
+
 <style lang="less" scoped>
 @import '../assets/fonts/icon-yejianmoshi/iconfont.css';
 @import '../assets/fonts/icon-baitianmoshi/iconfont.css';
 @import '../assets/fonts/icon-jiahao/iconfont.css';
 
-.top-bar {
-  width: 100%;
-  height: 60px;
-  padding: 0 30px;
-  box-sizing: border-box;
-  // rgba(255,255,255,0.80)
-  background: white;
-  backdrop-filter: blur(10px);
-  // box-shadow: 0px 0px 4px 0px rgba(0, 0, 0, 0.1);
-
-  // 实现页面滚动而头部不动
-  position: fixed; // 固定定位
-  // 定位的位置
-  top: 0;
-  left: 0;
-
-  // 定位在最上面一层
-  z-index: 9999;
-
-  // 采用flex布局
-  // 内部子元素按照水平方向平均分布，并在垂直方向居中对齐。
-  // 这通常用于创建水平方向的导航栏、工具栏等组件，使其内部元素能够自动适应容器的宽度，并在垂直方向上居中对齐。
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  .logo {
-    width: 215px;
-    display: flex;
-    align-items: center;
-    .logo-name {
-      font-size: 20px;
-      color: @gray-1;
-      padding-left: 10px;
-      font-weight: 600;
-    }
-  }
-
-  .user {
-    width: 200px;
-    .user-head {
-      float: right;
-      border-radius: 50%;
-      height: 36px;
-      width: 36px;
-      background-color: deepskyblue;
-    }
-  }
-
-  .logo-img {
-    width: 45px;
-    height: 30px;
-  }
-  .logo-name {
-    font-size: @font-size-14;
-  }
-
-  .menu {
-    .menu-AutoPlay {
-      margin-right: 24px;
-    }
-    .menu-Forum {
-      margin-right: 24px;
-    }
-    .menu-Music {
-      margin-right: 24px;
-    }
-  }
-}
-
 .wall-message {
   min-height: 700px;
-  padding-top: 60px;
   .title {
     padding-top: 20px;
     padding-bottom: 8px;
@@ -602,8 +277,6 @@ export default {
       line-height: 28px;
       margin: 4px;
       color: @gray-2;
-
-      // 改变鼠标样式
       cursor: pointer;
     }
     .labelSelected {
@@ -615,8 +288,6 @@ export default {
   }
 
   .card {
-    // border: 1px solid red;
-    // height: 10000px;
     .cardSelected {
       border: 1px solid @primary-color;
     }
@@ -628,7 +299,6 @@ export default {
     width: 52px;
     height: 80px;
     background-color: @gray-10;
-    // border: 1px solid @gray-1;
     box-shadow: 0 0 5px 5px #f8f8f8;
     border-radius: 14px;
     position: fixed;
@@ -642,7 +312,6 @@ export default {
         width: 28px;
         height: 28px;
         cursor: pointer;
-        // position: relative;
         transition: @trans;
         &:hover {
           background-color: #f0f0f0;

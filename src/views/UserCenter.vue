@@ -1,47 +1,5 @@
 <template>
   <div class="user-center">
-    <div class="top-bar">
-      <div class="logo">
-        <img src="@/assets/images/piano.png" class="logo-img" />
-        <p class="logo-name">钢琴知识学习系统</p>
-      </div>
-      <div class="menu">
-        <DemoButton
-          @click="goAutoPlay"
-          button_size="max"
-          :button_status="state.id == -1 ? 'cprimary' : 'csecondary'"
-          class="menu-AutoPlay"
-          >自由弹奏</DemoButton
-        >
-        <DemoButton
-          @click="goForum"
-          button_size="max"
-          :button_status="state.id == 0 ? 'cprimary' : 'csecondary'"
-          class="menu-Forum"
-          >学习论坛</DemoButton
-        >
-        <DemoButton
-          @click="goPhoto"
-          button_size="max"
-          :button_status="state.id == 1 ? 'cprimary' : 'csecondary'"
-          class="menu-Music"
-          >曲谱中心</DemoButton
-        >
-        <DemoButton
-          @click="goUserCenter"
-          button_size="max"
-          :button_status="state.id == 2 ? 'cprimary' : 'csecondary'"
-          class="menu-UserCenter"
-          >用户中心</DemoButton
-        >
-      </div>
-      <div class="user">
-        <span>{{ this.hello.string }}，欢迎您</span>
-        <div class="user-head" v-if="this.user.id == '::1'" @click="goPerson" />
-        <div class="user-head" v-if="this.user.id != '::1'" @click="exit" />
-      </div>
-    </div>
-
     <div class="user-content">
       <div class="search-form">
         <el-form :inline="true" :model="searchForm" class="search-form-inline">
@@ -92,182 +50,99 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
 import { findUserPageApi } from '@/api/index';
 import { users } from '../../mock/index';
-import DemoButton from '@/components/DemoButton.vue';
 
-export default {
-  name: 'UserCenter',
-  components: {
-    DemoButton,
-  },
-  data() {
-    return {
-      searchForm: {
-        username: '',
-        nickname: '',
-      },
-      tableData: [],
-      loading: false,
-      currentPage: 1,
-      pageSize: 10,
-      total: 0,
-      state: {
-        id: 0,
-      },
-      hello: {
-        string: '游客',
-      },
+const searchForm = reactive({
+  username: '',
+  nickname: '',
+});
+const tableData = ref([]);
+const loading = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
+
+const fetchUserList = async () => {
+  loading.value = true;
+  try {
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      username: searchForm.username,
+      nickname: searchForm.nickname,
     };
-  },
-  computed: {
-    user() {
-      return this.$store.state.user;
-    },
-  },
-  mounted() {
-    this.fetchUserList();
-  },
-  methods: {
-    async fetchUserList() {
-      this.loading = true;
-      try {
-        const params = {
-          page: this.currentPage,
-          pageSize: this.pageSize,
-          username: this.searchForm.username,
-          nickname: this.searchForm.nickname,
-        };
-        const res = await findUserPageApi(params);
-        if (res && res.data) {
-          this.tableData = res.data;
-          this.total = res.total || res.data.length;
-        } else {
-          this.mockUserList();
-        }
-      } catch (error) {
-        this.mockUserList();
-      } finally {
-        this.loading = false;
-      }
-    },
-    mockUserList() {
-      let filteredData = users.data;
-      if (this.searchForm.username) {
-        filteredData = filteredData.filter((item) =>
-          item.username.includes(this.searchForm.username)
-        );
-      }
-      if (this.searchForm.nickname) {
-        filteredData = filteredData.filter((item) =>
-          (item.nickname || '').includes(this.searchForm.nickname)
-        );
-      }
-      this.total = filteredData.length;
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
-      this.tableData = filteredData.slice(start, end);
-    },
-    handleSearch() {
-      this.currentPage = 1;
-      this.fetchUserList();
-    },
-    handleReset() {
-      this.searchForm = {
-        username: '',
-        nickname: '',
-      };
-      this.currentPage = 1;
-      this.fetchUserList();
-    },
-    handleSizeChange(val) {
-      this.pageSize = val;
-      this.currentPage = 1;
-      this.fetchUserList();
-    },
-    handleCurrentChange(val) {
-      this.currentPage = val;
-      this.fetchUserList();
-    },
-    handleView(row) {
-      this.$message.info(`用户: ${row.username}, 昵称: ${row.nickname || '无'}, 头像: ${row.user_pic || '无'}`);
-    },
-    goAutoPlay() {
-      this.$router.push('/AutoPlay');
-    },
-    goForum() {
-      this.$router.push('/CardPage');
-    },
-    goPhoto() {
-      this.$router.push('/PhotoPage');
-    },
-    goPerson() {
-      this.$router.push('/person');
-    },
-    goUserCenter() {
-      this.state.id = 2;
-      this.$router.push('/user-center');
-    },
-    exit() {
-      this.$store.commit('getUser', { id: '::1' });
-      this.$message.success('退出登录成功');
-      this.$router.push('/');
-    },
-  },
+    const res = await findUserPageApi(params);
+    if (res && res.data) {
+      tableData.value = res.data;
+      total.value = res.total || res.data.length;
+    } else {
+      mockUserList();
+    }
+  } catch (error) {
+    mockUserList();
+  } finally {
+    loading.value = false;
+  }
 };
+
+const mockUserList = () => {
+  let filteredData = users.data;
+  if (searchForm.username) {
+    filteredData = filteredData.filter((item) => item.username.includes(searchForm.username));
+  }
+  if (searchForm.nickname) {
+    filteredData = filteredData.filter((item) =>
+      (item.nickname || '').includes(searchForm.nickname),
+    );
+  }
+  total.value = filteredData.length;
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  tableData.value = filteredData.slice(start, end);
+};
+
+const handleSearch = () => {
+  currentPage.value = 1;
+  fetchUserList();
+};
+
+const handleReset = () => {
+  searchForm.username = '';
+  searchForm.nickname = '';
+  currentPage.value = 1;
+  fetchUserList();
+};
+
+const handleSizeChange = (val) => {
+  pageSize.value = val;
+  currentPage.value = 1;
+  fetchUserList();
+};
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val;
+  fetchUserList();
+};
+
+const handleView = (row) => {
+  ElMessage.info(
+    `用户: ${row.username}, 昵称: ${row.nickname || '无'}, 头像: ${row.user_pic || '无'}`,
+  );
+};
+
+onMounted(() => {
+  fetchUserList();
+});
 </script>
 
 <style lang="less" scoped>
 .user-center {
   min-height: 100vh;
   background-color: #f8f8f8;
-}
-
-.top-bar {
-  display: flex;
-  align-items: center;
-  background-color: #fff;
-  padding: 10px 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  margin-right: 40px;
-
-  .logo-img {
-    width: 40px;
-    height: 40px;
-    margin-right: 10px;
-  }
-
-  .logo-name {
-    font-size: 20px;
-    font-weight: bold;
-    color: #333;
-  }
-}
-
-.menu {
-  display: flex;
-  gap: 20px;
-  flex: 1;
-}
-
-.user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  .user-head {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    cursor: pointer;
-  }
 }
 
 .user-content {
