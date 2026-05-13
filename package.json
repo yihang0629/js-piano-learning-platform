@@ -22,6 +22,9 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@unocss/preset-attributify": "^0.50.5",
+    "@unocss/preset-uno": "^0.50.5",
+    "@unocss/vite": "^0.50.5",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
@@ -36,6 +39,7 @@
     "style-resources-loader": "^1.5.0",
     "stylus": "^0.63.0",
     "stylus-loader": "^8.1.0",
+    "unocss": "^0.50.5",
     "vite": "^6.4.2",
     "vue-cli-plugin-style-resources-loader": "^0.1.5"
   },

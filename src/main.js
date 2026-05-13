@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 
+import 'uno.css';
 import router from '@/router/index';
 import store from './store/store';
 import axios from 'axios';

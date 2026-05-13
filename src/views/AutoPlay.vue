@@ -1,7 +1,7 @@
 <template>
-  <div class="auto-play">
-    <div class="auto-play-toolbar">
-      <label>隐藏导航栏：</label>
+  <div class="auto-play w-full h-[575px] bg-white">
+    <div class="auto-play-toolbar flex items-center gap-10px p-10px-20px bg-gray-100">
+      <span>隐藏导航栏：</span>
       <xwButton :value="hideNavBar" @change="handleHideNavBarChange" />
     </div>
     <PanelsMain />
@@ -30,17 +30,4 @@ const handleHideNavBarChange = (newValue) => {
 </script>
 
 <style lang="less" scoped>
-.auto-play {
-  width: 100%;
-  height: 575px;
-  background: white;
-
-  .auto-play-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
-    background: #f5f5f5;
-  }
-}
 </style>
