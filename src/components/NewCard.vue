@@ -41,122 +41,94 @@
     </div>
   </div>
 </template>
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
 import { label } from '@/utils/data';
 import DemoButton from './DemoButton.vue';
-// profileApi
 import { insertWallApi } from '@/api/index';
-export default {
-  data() {
-    return {
-      // 标签
-      label,
-      label_num: 0,
 
-      // 标签模态框
-      bqFlag: false,
+const store = useStore();
 
-      // 内容
-      message: '',
-      // 作者
-      name: 'aaa',
-    };
+const props = defineProps({
+  biaoqian: {
+    default: [],
   },
-  computed: {
-    // 标记游客
-    user() {
-      return this.$store.state.user;
-    },
+  id: {
+    default: 0,
   },
-  mounted() {
-    this.getUser();
-  },
-  components: {
-    DemoButton,
-  },
-  props: {
-    biaoqian: {
-      default: [],
-    },
-    id: {
-      default: 0,
-    },
-  },
-  methods: {
-    SwitchListNode(index) {
-      this.label_num = index;
-    },
-    // 打开或关闭标签模态框
-    change_bqFlag() {
-      this.bqFlag = !this.bqFlag;
-    },
+});
 
-    // 关闭这个 新建内容 的模态框
-    closeNewCard() {
-      this.$emit('newCardClose');
-    },
+const emit = defineEmits(['newCardClose', 'clickbtn']);
 
-    // 处理得到游客唯一标识 userId
-    getUser() {
-      let timer = setInterval(() => {
-        if (this.user) {
-          clearInterval(timer);
-        }
-      }, 10);
-    },
+const label_num = ref(0);
+const bqFlag = ref(false);
+const message = ref('');
+const name = ref('aaa');
 
-    // 提交 新建帖
-    submit() {
-      // 标签模态框修改为不弹出状态
-      this.bqFlag = false;
+const user = computed(() => store.state.user);
 
-      let data = {
-        type: this.id,
-        message: this.message,
-        userId: this.user.id,
-        name: '匿名',
-        moment: new Date(),
-        label: this.label_num,
-      };
-      // console.log(data);
-
-      // 输入的帖子内容不为空，则会将数据写入数据库
-      if (this.message) {
-        insertWallApi(data)
-          .then((res) => {
-            // 后端处理后的数据是res
-            // console.log(res);
-
-            let newdata = {
-              type: this.id,
-              message: this.message,
-              userId: this.user.id,
-              name: '匿名',
-              moment: new Date(),
-              label: this.label_num,
-              id: res.message.insertId,
-              islike: [{ count: 0 }],
-              like: [{ count: 0 }],
-              comcount: [{ count: 0 }],
-              report: [{ count: 0 }],
-              revoke: [{ count: 0 }],
-            };
-            // 触发数据渲染并插入页面事件
-            this.$emit('clickbtn', newdata);
-            this.message = '';
-          })
-          .catch((error) => {
-            console.error('Error fetching user:', error);
-          });
-      }
-    },
-
-    //
-    showPhoto() {},
-    // 图片提交
-    updatePhoto() {},
-  },
+const SwitchListNode = (index) => {
+  label_num.value = index;
 };
+
+const change_bqFlag = () => {
+  bqFlag.value = !bqFlag.value;
+};
+
+const closeNewCard = () => {
+  emit('newCardClose');
+};
+
+const getUser = () => {
+  const timer = setInterval(() => {
+    if (user.value) {
+      clearInterval(timer);
+    }
+  }, 10);
+};
+
+const submit = () => {
+  bqFlag.value = false;
+
+  const data = {
+    type: props.id,
+    message: message.value,
+    userId: user.value.id,
+    name: '匿名',
+    moment: new Date(),
+    label: label_num.value,
+  };
+
+  if (message.value) {
+    insertWallApi(data)
+      .then((res) => {
+        const newdata = {
+          type: props.id,
+          message: message.value,
+          userId: user.value.id,
+          name: '匿名',
+          moment: new Date(),
+          label: label_num.value,
+          id: res.message.insertId,
+          islike: [{ count: 0 }],
+          like: [{ count: 0 }],
+          comcount: [{ count: 0 }],
+          report: [{ count: 0 }],
+          revoke: [{ count: 0 }],
+        };
+        emit('clickbtn', newdata);
+        message.value = '';
+      })
+      .catch((error) => {
+        console.error('Error fetching user:', error);
+      });
+  }
+};
+
+onMounted(() => {
+  getUser();
+});
 </script>
 <style lang="less" scoped>
 @import '@/assets/fonts/icon-biaoqian/iconfont.css';
