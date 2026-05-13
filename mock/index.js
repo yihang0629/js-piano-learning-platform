@@ -1,5 +1,5 @@
 // 引入mockjs
-let Mock = require('mockjs')
+import Mock from 'mockjs'
 
 // 论坛的模拟数据
 export const talk = Mock.mock({
